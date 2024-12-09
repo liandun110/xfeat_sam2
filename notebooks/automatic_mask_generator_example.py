@@ -33,20 +33,34 @@ def show_anns(anns, borders=True):
     ax.imshow(img)
 
 
+def load_image(image_path: str):
+    max_size = 1024
+    image = Image.open(image_path)
+    image = image.convert("RGB")
+    width, height = image.size
+    if width > height:
+        new_width = max_size
+        new_height = int((new_width / width) * height)
+    else:
+        new_height = max_size
+        new_width = int((new_height / height) * width)
+    image_resized = image.resize((new_width, new_height))
+    image = np.array(image_resized)
+    return image
+
+
 def main():
-    # 读入图像
-    image = Image.open('/home/suma/projects/undercar_detection/undercar_datasets/images/train/20200820153147668495.jpg')
-    image = np.array(image.convert("RGB"))
+    image = load_image('/home/suma/projects/undercar_detection/undercar_datasets/images/train/20200820153147668495.jpg')
     sam2_checkpoint = "../checkpoints/sam2.1_hiera_large.pt"
     model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
     sam2 = build_sam2(model_cfg, sam2_checkpoint, device=torch.device("cuda"), apply_postprocessing=False)
     mask_generator = SAM2AutomaticMaskGenerator(
         model=sam2,
-        points_per_side=32,
-        points_per_batch=64,
-        pred_iou_thresh=0.8,
-        stability_score_thresh=0.95,
-        stability_score_offset=1.0,
+        points_per_side=64,
+        points_per_batch=256,
+        pred_iou_thresh=0.7,
+        stability_score_thresh=0.92,
+        stability_score_offset=0.7,
         mask_threshold=0.0,
         box_nms_thresh=0.7,
         crop_n_layers=0,
@@ -54,7 +68,7 @@ def main():
         crop_overlap_ratio=512 / 1500,
         crop_n_points_downscale_factor=1,
         point_grids=None,
-        min_mask_region_area=0,
+        min_mask_region_area=50*50,
         output_mode="binary_mask",
         use_m2m=False,
         multimask_output=True)
