@@ -1,9 +1,6 @@
 import cv2
 import time
 import torch
-torch.autocast("cuda", dtype=torch.bfloat16).__enter__()
-torch.backends.cuda.matmul.allow_tf32 = True
-torch.backends.cudnn.allow_tf32 = True
 import matplotlib.pyplot as plt
 import numpy as np
 from modules.xfeat import XFeat
@@ -122,6 +119,11 @@ def get_unmatched_points(im1, im2):
 
 
 def main():
+    # torch默认设置
+    torch.autocast("cuda", dtype=torch.bfloat16).__enter__()
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+
     # 入读图像
     im1 = load_image('/home/suma/projects/undercar_detection/undercar_datasets/images/train/20200820153147668495.jpg')
     im2 = load_image('/home/suma/projects/undercar_detection/undercar_datasets/images/train/20200820153641660311.jpg')
@@ -129,7 +131,11 @@ def main():
     # im2 = load_image('/home/suma/Pictures/2.jpg')
 
     # 得到未匹配的点
+    start_time = time.time()
     unmatched_points, _ = get_unmatched_points(im1, im2)
+    end_time = time.time()
+    process_time = end_time - start_time
+    print('xfeat耗时:', process_time)
 
     sam2_checkpoint = "../checkpoints/sam2.1_hiera_large.pt"
     model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
