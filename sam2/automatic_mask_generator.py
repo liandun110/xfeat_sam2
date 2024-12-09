@@ -167,7 +167,7 @@ class SAM2AutomaticMaskGenerator:
         return cls(sam_model, **kwargs)
 
     @torch.no_grad()
-    def generate(self, image: np.ndarray) -> List[Dict[str, Any]]:
+    def generate(self, image, points) -> List[Dict[str, Any]]:
         """
         Generates masks for the given image.
 
@@ -193,7 +193,7 @@ class SAM2AutomaticMaskGenerator:
         """
 
         # Generate masks
-        mask_data = self._generate_masks(image)
+        mask_data = self._generate_masks(image, points)
 
         # Encode masks
         if self.output_mode == "coco_rle":
@@ -221,7 +221,7 @@ class SAM2AutomaticMaskGenerator:
 
         return curr_anns
 
-    def _generate_masks(self, image: np.ndarray) -> MaskData:
+    def _generate_masks(self, image, points) -> MaskData:
         orig_size = image.shape[:2]
         crop_boxes, layer_idxs = generate_crop_boxes(
             orig_size, self.crop_n_layers, self.crop_overlap_ratio
@@ -230,7 +230,7 @@ class SAM2AutomaticMaskGenerator:
         # Iterate over image crops
         data = MaskData()
         for crop_box, layer_idx in zip(crop_boxes, layer_idxs):
-            crop_data = self._process_crop(image, crop_box, layer_idx, orig_size)
+            crop_data = self._process_crop(image, crop_box, layer_idx, orig_size, points)
             data.cat(crop_data)
 
         # Remove duplicate masks between crops
@@ -254,6 +254,7 @@ class SAM2AutomaticMaskGenerator:
         crop_box: List[int],
         crop_layer_idx: int,
         orig_size: Tuple[int, ...],
+        points: np.ndarray,
     ) -> MaskData:
         # Crop the image and calculate embeddings
         x0, y0, x1, y1 = crop_box
@@ -263,7 +264,9 @@ class SAM2AutomaticMaskGenerator:
 
         # Get points for this crop
         points_scale = np.array(cropped_im_size)[None, ::-1]
-        points_for_image = self.point_grids[crop_layer_idx] * points_scale
+
+        # points_for_image = self.point_grids[crop_layer_idx] * points_scale
+        points_for_image = points
 
         # Generate masks for this crop in batches
         data = MaskData()
