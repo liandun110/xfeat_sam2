@@ -69,6 +69,8 @@ def show_anns(anns, borders=True):
     img = np.ones((sorted_anns[0]['segmentation'].shape[0], sorted_anns[0]['segmentation'].shape[1], 4))
     img[:, :, 3] = 0
     for ann in sorted_anns:
+        area = ann['area']
+        bbox = ann['bbox']
         m = ann['segmentation']
         color_mask = np.concatenate([np.random.random(3), [0.5]])
         img[m] = color_mask
@@ -77,6 +79,10 @@ def show_anns(anns, borders=True):
             # Try to smooth contours
             contours = [cv2.approxPolyDP(contour, epsilon=0.01, closed=True) for contour in contours]
             cv2.drawContours(img, contours, -1, (0, 0, 1, 0.4), thickness=1)
+
+            # 显示面积和边框位置
+            center_x, center_y = int(bbox[0] + bbox[2] / 2), int(bbox[1] + bbox[3] / 2)
+            ax.text(center_x, center_y, f"{int(area)}", color='yellow', fontsize=8, ha='center', va='center')
 
     ax.imshow(img)
 
@@ -117,10 +123,10 @@ def get_unmatched_points(im1, im2):
 
 def main():
     # 入读图像
-    # im1 = load_image('/home/suma/projects/undercar_detection/undercar_datasets/images/train/20200820153147668495.jpg')
-    # im2 = load_image('/home/suma/projects/undercar_detection/undercar_datasets/images/train/20200820153641660311.jpg')
-    im1 = load_image('/home/suma/Pictures/1.jpg')
-    im2 = load_image('/home/suma/Pictures/2.jpg')
+    im1 = load_image('/home/suma/projects/undercar_detection/undercar_datasets/images/train/20200820153147668495.jpg')
+    im2 = load_image('/home/suma/projects/undercar_detection/undercar_datasets/images/train/20200820153641660311.jpg')
+    # im1 = load_image('/home/suma/Pictures/1.jpg')
+    # im2 = load_image('/home/suma/Pictures/2.jpg')
 
     # 得到未匹配的点
     unmatched_points, _ = get_unmatched_points(im1, im2)
@@ -142,7 +148,7 @@ def main():
         crop_overlap_ratio=512 / 1500,
         crop_n_points_downscale_factor=1,
         point_grids=None,
-        min_mask_region_area=50*50,
+        min_mask_region_area=0,
         output_mode="binary_mask",
         use_m2m=False,
         multimask_output=True)
@@ -151,6 +157,11 @@ def main():
     end_time = time.time()
     process_time = end_time - start_time
     print('process_time:', process_time)
+
+    # 过滤面积过小或过大的区域
+    masks = [x for x in masks if 200<x['area']<2000]
+
+    # 可视化
     plt.figure(figsize=(20, 20))
     plt.imshow(im1)
     show_anns(masks)
