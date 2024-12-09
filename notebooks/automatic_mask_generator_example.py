@@ -1,9 +1,9 @@
 import cv2
 import time
 import torch
-# torch.autocast("cuda", dtype=torch.bfloat16).__enter__()
-# torch.backends.cuda.matmul.allow_tf32 = True
-# torch.backends.cudnn.allow_tf32 = True
+torch.autocast("cuda", dtype=torch.bfloat16).__enter__()
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
@@ -50,14 +50,15 @@ def load_image(image_path: str):
 
 
 def main():
-    image = load_image('/home/suma/projects/undercar_detection/undercar_datasets/images/train/20200820153147668495.jpg')
+    # image = load_image('/home/suma/projects/undercar_detection/undercar_datasets/images/train/20200820153147668495.jpg')
+    image = load_image('/home/suma/Pictures/1.jpg')
     sam2_checkpoint = "../checkpoints/sam2.1_hiera_large.pt"
     model_cfg = "configs/sam2.1/sam2.1_hiera_l.yaml"
     sam2 = build_sam2(model_cfg, sam2_checkpoint, device=torch.device("cuda"), apply_postprocessing=False)
     mask_generator = SAM2AutomaticMaskGenerator(
         model=sam2,
         points_per_side=64,
-        points_per_batch=256,
+        points_per_batch=512,
         pred_iou_thresh=0.7,
         stability_score_thresh=0.92,
         stability_score_offset=0.7,
